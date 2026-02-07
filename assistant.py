@@ -23,6 +23,7 @@ def handle_help(_: list[str]) -> str:
         "  open <path>           Open a file or folder (uses OS default)\n"
         "  run <command>         Run a shell command (sandboxed to current user)\n"
         "  speak <text>          Speak text aloud with a female voice when possible\n"
+        "  import_keys <path>    Import API keys from a .env-style file\n"
         "  exit / quit           Leave the assistant\n"
     )
 
@@ -104,6 +105,43 @@ def handle_speak(args: list[str]) -> str:
     return "Spoken."
 
 
+def _parse_env_line(line: str) -> tuple[str, str] | None:
+    stripped = line.strip()
+    if not stripped or stripped.startswith("#"):
+        return None
+
+    if stripped.lower().startswith("export "):
+        stripped = stripped[7:].lstrip()
+
+    if "=" not in stripped:
+        return None
+
+    key, value = stripped.split("=", 1)
+    return key.strip(), value.strip().strip("\"'")
+
+
+def handle_import_keys(args: list[str]) -> str:
+    if not args:
+        return "Usage: import_keys <path>"
+
+    path = os.path.expanduser(" ".join(args))
+    if not os.path.exists(path):
+        return f"Path not found: {path}"
+
+    imported = 0
+    with open(path, "r", encoding="utf-8") as file_handle:
+        for line in file_handle:
+            parsed = _parse_env_line(line)
+            if not parsed:
+                continue
+            key, value = parsed
+            if key:
+                os.environ[key] = value
+                imported += 1
+
+    return f"Imported {imported} key(s)."
+
+
 HANDLERS: dict[str, CommandHandler] = {
     "help": handle_help,
     "time": handle_time,
@@ -111,6 +149,7 @@ HANDLERS: dict[str, CommandHandler] = {
     "open": handle_open,
     "run": handle_run,
     "speak": handle_speak,
+    "import_keys": handle_import_keys,
 }
 
 
