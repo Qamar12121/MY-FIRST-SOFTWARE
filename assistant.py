@@ -24,6 +24,7 @@ def handle_help(_: list[str]) -> str:
         "  run <command>         Run a shell command (sandboxed to current user)\n"
         "  speak <text>          Speak text aloud with a female voice when possible\n"
         "  import_keys <path>    Import API keys from a .env-style file\n"
+        "  voice                Listen for voice commands (optional dependency)\n"
         "  exit / quit           Leave the assistant\n"
     )
 
@@ -142,6 +143,76 @@ def handle_import_keys(args: list[str]) -> str:
     return f"Imported {imported} key(s)."
 
 
+def _shutdown_command() -> list[str]:
+    if sys.platform.startswith("darwin"):
+        return ["shutdown", "-h", "now"]
+    if os.name == "nt":
+        return ["shutdown", "/s", "/t", "0"]
+    return ["shutdown", "-h", "now"]
+
+
+def _restart_command() -> list[str]:
+    if sys.platform.startswith("darwin"):
+        return ["shutdown", "-r", "now"]
+    if os.name == "nt":
+        return ["shutdown", "/r", "/t", "0"]
+    return ["shutdown", "-r", "now"]
+
+
+def _execute_system_command(command: list[str]) -> str:
+    try:
+        result = subprocess.run(command, check=False, capture_output=True, text=True)
+    except OSError as exc:
+        return f"Command failed to start: {exc}"
+    if result.returncode != 0:
+        error = result.stderr.strip() or result.stdout.strip()
+        return f"Command failed: {error or 'Unknown error'}"
+    return "Command executed."
+
+
+def handle_voice(_: list[str]) -> str:
+    try:
+        import speech_recognition as sr
+    except ModuleNotFoundError:
+        return (
+            "Voice mode requires speech_recognition. Install it with: "
+            "pip install SpeechRecognition"
+        )
+
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        recognizer.adjust_for_ambient_noise(source, duration=0.6)
+        try:
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=6)
+        except sr.WaitTimeoutError:
+            return "Listening timed out."
+
+    try:
+        command = recognizer.recognize_google(audio).lower().strip()
+    except sr.UnknownValueError:
+        return "Could not understand audio."
+    except sr.RequestError as exc:
+        return f"Speech recognition request failed: {exc}"
+
+    if command.startswith("open "):
+        target = command.replace("open ", "", 1).strip()
+        return handle_open([target])
+
+    if command in {"shutdown", "shut down"}:
+        return (
+            "Voice shutdown requested. For safety, run: "
+            "python3 assistant.py run " + " ".join(shlex.quote(part) for part in _shutdown_command())
+        )
+
+    if command in {"restart", "reboot"}:
+        return (
+            "Voice restart requested. For safety, run: "
+            "python3 assistant.py run " + " ".join(shlex.quote(part) for part in _restart_command())
+        )
+
+    return f"Unrecognized voice command: {command}"
+
+
 HANDLERS: dict[str, CommandHandler] = {
     "help": handle_help,
     "time": handle_time,
@@ -150,6 +221,7 @@ HANDLERS: dict[str, CommandHandler] = {
     "run": handle_run,
     "speak": handle_speak,
     "import_keys": handle_import_keys,
+    "voice": handle_voice,
 }
 
 

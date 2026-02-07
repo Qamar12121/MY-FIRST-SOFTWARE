@@ -8,6 +8,7 @@ A lightweight, offline command-line assistant you can run on your PC. It offers 
 - Run simple shell commands.
 - Speak text aloud with a female voice when available.
 - Import API keys from a `.env`-style file.
+- Use voice commands for simple actions (optional dependency).
 
 ## Getting Started
 
@@ -30,6 +31,7 @@ python3 assistant.py time
 python3 assistant.py run ls -la
 python3 assistant.py speak "Hello from CREAI"
 python3 assistant.py import_keys ~/.config/creai.env
+python3 assistant.py voice
 ```
 
 ## Notes
@@ -37,3 +39,4 @@ python3 assistant.py import_keys ~/.config/creai.env
 - The `open` command uses the OS default opener (`open`, `xdg-open`, or `start`).
 - The `speak` command requires `pyttsx3` (install with `pip install pyttsx3`).
 - The `import_keys` command supports lines like `API_KEY=...` or `export API_KEY=...`.
+- The `voice` command requires `SpeechRecognition` and a working microphone.
