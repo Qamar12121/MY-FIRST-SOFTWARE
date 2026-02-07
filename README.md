@@ -17,6 +17,12 @@ python3 assistant.py
 
 Type `help` to see available commands.
 
+### GUI (Iron Man-inspired HUD)
+
+```bash
+python3 gui.py
+```
+
 You can also run a single command non-interactively:
 
 ```bash
