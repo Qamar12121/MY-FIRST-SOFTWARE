@@ -15,6 +15,13 @@ python3 assistant.py
 
 Type `help` to see available commands.
 
+You can also run a single command non-interactively:
+
+```bash
+python3 assistant.py time
+python3 assistant.py run ls -la
+```
+
 ## Notes
 - The `run` command executes commands as your current user.
 - The `open` command uses the OS default opener (`open`, `xdg-open`, or `start`).

@@ -89,7 +89,33 @@ WELCOME = (
 )
 
 
+def process_command(raw: str) -> str | None:
+    if not raw:
+        return None
+
+    if raw.lower() in {"exit", "quit"}:
+        return "Goodbye!"
+
+    try:
+        parts = shlex.split(raw)
+    except ValueError as exc:
+        return f"Parse error: {exc}"
+
+    command, *args = parts
+    handler = HANDLERS.get(command.lower())
+    if not handler:
+        return "Unknown command. Type 'help' for options."
+
+    return handler(args)
+
+
 def main() -> None:
+    if len(sys.argv) > 1:
+        response = process_command(" ".join(sys.argv[1:]))
+        if response:
+            print(response)
+        return
+
     print(WELCOME)
     while True:
         try:
@@ -98,27 +124,12 @@ def main() -> None:
             print("\nGoodbye!")
             break
 
-        if not raw:
+        response = process_command(raw)
+        if response is None:
             continue
-
-        if raw.lower() in {"exit", "quit"}:
-            print("Goodbye!")
-            break
-
-        try:
-            parts = shlex.split(raw)
-        except ValueError as exc:
-            print(f"Parse error: {exc}")
-            continue
-
-        command, *args = parts
-        handler = HANDLERS.get(command.lower())
-        if not handler:
-            print("Unknown command. Type 'help' for options.")
-            continue
-
-        response = handler(args)
         print(response)
+        if response == "Goodbye!":
+            break
 
 
 if __name__ == "__main__":
