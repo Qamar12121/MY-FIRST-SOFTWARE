@@ -22,6 +22,7 @@ def handle_help(_: list[str]) -> str:
         "  date                 Show current date\n"
         "  open <path>           Open a file or folder (uses OS default)\n"
         "  run <command>         Run a shell command (sandboxed to current user)\n"
+        "  speak <text>          Speak text aloud with a female voice when possible\n"
         "  exit / quit           Leave the assistant\n"
     )
 
@@ -75,12 +76,41 @@ def handle_run(args: list[str]) -> str:
     return "\n".join([status, combined]) if combined else status
 
 
+def _find_female_voice_id(engine: "pyttsx3.Engine") -> str | None:
+    for voice in engine.getProperty("voices"):
+        name = getattr(voice, "name", "").lower()
+        gender = getattr(voice, "gender", "").lower()
+        if "female" in gender or "female" in name or "zira" in name or "samantha" in name:
+            return voice.id
+    return None
+
+
+def handle_speak(args: list[str]) -> str:
+    if not args:
+        return "Usage: speak <text>"
+
+    try:
+        import pyttsx3
+    except ModuleNotFoundError:
+        return "Text-to-speech requires pyttsx3. Install it with: pip install pyttsx3"
+
+    text = " ".join(args)
+    engine = pyttsx3.init()
+    female_voice_id = _find_female_voice_id(engine)
+    if female_voice_id:
+        engine.setProperty("voice", female_voice_id)
+    engine.say(text)
+    engine.runAndWait()
+    return "Spoken."
+
+
 HANDLERS: dict[str, CommandHandler] = {
     "help": handle_help,
     "time": handle_time,
     "date": handle_date,
     "open": handle_open,
     "run": handle_run,
+    "speak": handle_speak,
 }
 
 
